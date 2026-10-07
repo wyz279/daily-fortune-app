@@ -1,0 +1,1671 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <meta name="theme-color" content="#0d1117" />
+  <title>Today's Fortune / 今日靈籤</title>
+
+  <style>
+    /* =========================================
+       RESET
+    ========================================= */
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+    }
+
+    body {
+      font-family:
+        Inter,
+        "Noto Sans TC",
+        "Microsoft JhengHei",
+        system-ui,
+        sans-serif;
+      background: #0d1117;
+      color: #f4f1eb;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    /* =========================================
+       BACKGROUND
+    ========================================= */
+
+    .app {
+      position: relative;
+      min-height: 100vh;
+      min-height: 100svh;
+      overflow: hidden;
+      background:
+        radial-gradient(
+          circle at 50% 35%,
+          rgba(110, 92, 160, 0.12),
+          transparent 34%
+        ),
+        radial-gradient(
+          circle at 15% 80%,
+          rgba(76, 115, 145, 0.08),
+          transparent 30%
+        ),
+        #0d1117;
+    }
+
+    .app::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.22;
+      background-image:
+        linear-gradient(
+          rgba(255, 255, 255, 0.025) 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.025) 1px,
+          transparent 1px
+        );
+      background-size: 45px 45px;
+      mask-image: linear-gradient(
+        to bottom,
+        transparent,
+        black 15%,
+        black 85%,
+        transparent
+      );
+    }
+
+    .noise {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.045;
+      z-index: 2;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+    }
+
+    /* =========================================
+       HEADER
+    ========================================= */
+
+    .header {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 32px 42px 0;
+    }
+
+    .eyebrow {
+      color: #8d8897;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .title {
+      font-size: clamp(28px, 4vw, 52px);
+      line-height: 0.95;
+      font-weight: 900;
+      letter-spacing: -0.055em;
+    }
+
+    .title span {
+      color: #aaa4b5;
+      font-weight: 400;
+    }
+
+    .edition {
+      font-size: 10px;
+      color: #777582;
+      letter-spacing: 0.16em;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    /* =========================================
+       MAIN
+    ========================================= */
+
+    main {
+      position: relative;
+      z-index: 4;
+      min-height: calc(100vh - 105px);
+      min-height: calc(100svh - 105px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 50px 20px 60px;
+    }
+
+    .screen {
+      width: min(920px, 100%);
+      min-height: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* =========================================
+       START SCREEN
+    ========================================= */
+
+    .fortune-area {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .instruction {
+      margin-top: 32px;
+      text-align: center;
+      color: #b0adb7;
+      font-size: 14px;
+      line-height: 1.8;
+      letter-spacing: 0.06em;
+    }
+
+    .instruction strong {
+      display: block;
+      color: #f5f2ed;
+      font-size: 15px;
+      margin-bottom: 3px;
+    }
+
+    .status {
+      height: 22px;
+      margin-top: 18px;
+      color: #777482;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      transition: color 0.25s ease;
+    }
+
+    .status.active {
+      color: #c5b7e6;
+    }
+
+    /* =========================================
+       BAMBOO CONTAINER
+    ========================================= */
+
+    .bamboo-wrapper {
+      position: relative;
+      width: 190px;
+      height: 300px;
+      cursor: pointer;
+      touch-action: none;
+      perspective: 800px;
+    }
+
+    .bamboo-shadow {
+      position: absolute;
+      left: 50%;
+      bottom: -25px;
+      width: 210px;
+      height: 28px;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.55);
+      filter: blur(16px);
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+    }
+
+    .bamboo {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 150px;
+      height: 260px;
+      transform: translateX(-50%);
+      border-radius: 48% 48% 16px 16px;
+      border: 1px solid rgba(221, 207, 236, 0.38);
+      background:
+        linear-gradient(
+          90deg,
+          #15131b 0%,
+          #302b38 13%,
+          #17151e 28%,
+          #393341 49%,
+          #1a1720 71%,
+          #0c0c11 100%
+        );
+      box-shadow:
+        0 25px 50px rgba(0, 0, 0, 0.65),
+        inset 10px 0 20px rgba(255, 255, 255, 0.03),
+        inset -10px 0 20px rgba(0, 0, 0, 0.35);
+      transition:
+        transform 0.15s ease,
+        filter 0.2s ease;
+    }
+
+    .bamboo::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 12px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(238, 229, 244, 0.35);
+      background:
+        radial-gradient(
+          ellipse at 50% 50%,
+          #09090d 0%,
+          #14121a 62%,
+          #302a37 100%
+        );
+      box-shadow:
+        inset 0 8px 12px rgba(255, 255, 255, 0.04),
+        0 4px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .bamboo::after {
+      content: "";
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 22px;
+      height: 3px;
+      background: rgba(230, 219, 240, 0.08);
+      box-shadow:
+        0 -22px rgba(230, 219, 240, 0.05),
+        0 -44px rgba(230, 219, 240, 0.05),
+        0 -66px rgba(230, 219, 240, 0.05),
+        0 -88px rgba(230, 219, 240, 0.05),
+        0 -110px rgba(230, 219, 240, 0.05),
+        0 -132px rgba(230, 219, 240, 0.05),
+        0 -154px rgba(230, 219, 240, 0.05);
+    }
+
+    .bamboo-label {
+      position: absolute;
+      left: 50%;
+      top: 90px;
+      transform: translateX(-50%);
+      width: 95px;
+      padding: 13px 5px;
+      border-top: 1px solid rgba(230, 220, 242, 0.25);
+      border-bottom: 1px solid rgba(230, 220, 242, 0.25);
+      color: #ded7e7;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      line-height: 1.5;
+    }
+
+    .bamboo-label small {
+      display: block;
+      margin-top: 3px;
+      color: #777181;
+      font-size: 7px;
+      letter-spacing: 0.15em;
+    }
+
+    .bamboo-wrapper:hover .bamboo {
+      filter: brightness(1.12);
+    }
+
+    .bamboo-wrapper.pressing .bamboo {
+      animation: shake 0.105s infinite;
+    }
+
+    .bamboo-wrapper.pressing .bamboo-shadow {
+      transform: translateX(-50%) scaleX(1.12);
+    }
+
+    .bamboo-wrapper.pressing::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle,
+        rgba(166, 139, 210, 0.11),
+        transparent 64%
+      );
+      animation: pulse 0.8s infinite;
+    }
+
+    @keyframes shake {
+      0% {
+        transform: translateX(-50%) rotate(-2deg) translateY(0);
+      }
+      25% {
+        transform: translateX(-50%) rotate(2.4deg) translateY(-3px);
+      }
+      50% {
+        transform: translateX(-50%) rotate(-1.5deg) translateY(2px);
+      }
+      75% {
+        transform: translateX(-50%) rotate(2deg) translateY(-2px);
+      }
+      100% {
+        transform: translateX(-50%) rotate(-2deg) translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%,
+      100% {
+        transform: scale(0.9);
+        opacity: 0.2;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+      }
+    }
+
+    /* =========================================
+       DRAWN STICKS
+    ========================================= */
+
+    .sticks-stage {
+      position: absolute;
+      width: min(900px, 100%);
+      height: 430px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s ease;
+    }
+
+    .sticks-stage.visible {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .drawn-stick {
+      position: absolute;
+      left: 50%;
+      bottom: 42px;
+      width: 44px;
+      height: 290px;
+      cursor: pointer;
+      transform-origin: 50% 100%;
+      transition:
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.35s ease,
+        filter 0.3s ease;
+    }
+
+    .drawn-stick::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 0;
+      width: 36px;
+      height: 100%;
+      border: 1px solid rgba(239, 230, 244, 0.38);
+      border-radius: 3px 3px 8px 8px;
+      background:
+        linear-gradient(
+          90deg,
+          #9c8c78,
+          #d5c6ad 45%,
+          #a4937c
+        );
+      box-shadow:
+        0 15px 25px rgba(0, 0, 0, 0.45),
+        inset 2px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    .drawn-stick::after {
+      content: attr(data-number);
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      transform: translate(-50%, -50%);
+      color: #29231d;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .drawn-stick:hover {
+      filter: brightness(1.18);
+    }
+
+    .drawn-stick:hover::before {
+      box-shadow:
+        0 18px 30px rgba(0, 0, 0, 0.55),
+        0 0 18px rgba(180, 157, 211, 0.18);
+    }
+
+    .drawn-stick:nth-child(1) {
+      transform: translateX(-250px) rotate(-19deg);
+    }
+
+    .drawn-stick:nth-child(2) {
+      transform: translateX(-165px) rotate(-11deg);
+    }
+
+    .drawn-stick:nth-child(3) {
+      transform: translateX(-80px) rotate(-5deg);
+    }
+
+    .drawn-stick:nth-child(4) {
+      transform: translateX(5px) rotate(3deg);
+    }
+
+    .drawn-stick:nth-child(5) {
+      transform: translateX(90px) rotate(8deg);
+    }
+
+    .drawn-stick:nth-child(6) {
+      transform: translateX(175px) rotate(14deg);
+    }
+
+    .drawn-stick.selected {
+      z-index: 20;
+      transform:
+        translateX(-50%)
+        translateY(-40px)
+        rotate(0deg)
+        scale(1.35);
+      filter:
+        drop-shadow(0 0 18px rgba(190, 166, 225, 0.35));
+    }
+
+    .drawn-stick.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(100px) scale(0.5);
+    }
+
+    .choose-text {
+      position: absolute;
+      left: 50%;
+      bottom: -8px;
+      transform: translateX(-50%);
+      color: #8c8795;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* =========================================
+       RESULT
+    ========================================= */
+
+    .result-screen {
+      width: min(670px, 100%);
+      padding: 10px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px);
+      transition:
+        opacity 0.55s ease,
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: none;
+    }
+
+    .result-screen.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .result-card {
+      position: relative;
+      padding: 42px 42px 36px;
+      border: 1px solid rgba(220, 210, 230, 0.18);
+      background:
+        linear-gradient(
+          135deg,
+          rgba(34, 31, 42, 0.95),
+          rgba(17, 19, 25, 0.97)
+        );
+      box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.55),
+        inset 0 1px rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+    }
+
+    .result-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--luck-color, #a795c5);
+      box-shadow: 0 0 25px var(--luck-color, #a795c5);
+    }
+
+    .result-card::after {
+      content: "FORTUNE";
+      position: absolute;
+      right: -18px;
+      top: 30px;
+      font-size: 70px;
+      font-weight: 900;
+      letter-spacing: -0.07em;
+      color: rgba(255, 255, 255, 0.025);
+      transform: rotate(-90deg);
+      transform-origin: right top;
+    }
+
+    .result-top {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+      padding-bottom: 20px;
+      margin-bottom: 28px;
+    }
+
+    .result-label {
+      color: #817c89;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+    }
+
+    .result-number {
+      color: #6f6978;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+    }
+
+    .fortune-grade {
+      position: relative;
+      z-index: 1;
+      font-size: clamp(46px, 9vw, 76px);
+      line-height: 0.95;
+      font-weight: 900;
+      letter-spacing: -0.075em;
+      margin-bottom: 16px;
+    }
+
+    .fortune-keyword {
+      position: relative;
+      z-index: 1;
+      display: inline-block;
+      padding: 6px 10px;
+      margin-bottom: 23px;
+      border: 1px solid rgba(220, 210, 230, 0.18);
+      color: #c7c0d1;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .fortune-description {
+      position: relative;
+      z-index: 1;
+      color: #c0bdc5;
+      font-size: 15px;
+      line-height: 2;
+      letter-spacing: 0.04em;
+      margin-bottom: 32px;
+    }
+
+    .color-section {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 15px;
+      align-items: center;
+      padding: 17px;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .color-swatch {
+      width: 58px;
+      height: 58px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow:
+        0 8px 18px rgba(0, 0, 0, 0.35),
+        inset 0 0 15px rgba(255, 255, 255, 0.1);
+    }
+
+    .color-title {
+      color: #77727e;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .color-name {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .color-hex {
+      color: #77727e;
+      font-family: monospace;
+      font-size: 10px;
+      margin-top: 4px;
+    }
+
+    .again-button {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      margin-top: 22px;
+      padding: 16px 20px;
+      border: 1px solid rgba(222, 214, 231, 0.25);
+      background: transparent;
+      color: #f3f0eb;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        transform 0.2s ease;
+    }
+
+    .again-button:hover {
+      background: rgba(211, 194, 235, 0.08);
+      border-color: rgba(222, 214, 231, 0.5);
+    }
+
+    .again-button:active {
+      transform: scale(0.98);
+    }
+
+    /* =========================================
+       DECORATION
+    ========================================= */
+
+    .corner {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border-color: rgba(220, 211, 231, 0.16);
+      pointer-events: none;
+    }
+
+    .corner.tl {
+      left: 28px;
+      top: 28px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .corner.br {
+      right: 28px;
+      bottom: 28px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .vertical-label {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%) rotate(90deg);
+      transform-origin: center;
+      color: #47434d;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+    }
+
+    /* =========================================
+       STATES
+    ========================================= */
+
+    .start-panel,
+    .selection-panel {
+      transition:
+        opacity 0.45s ease,
+        transform 0.45s ease;
+    }
+
+    .start-panel.hidden {
+      opacity: 0;
+      transform: scale(0.94);
+      pointer-events: none;
+      position: absolute;
+    }
+
+    .selection-panel {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .selection-panel.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* =========================================
+       MOBILE
+    ========================================= */
+
+    @media (max-width: 700px) {
+      .header {
+        padding: 24px 22px 0;
+      }
+
+      .title {
+        font-size: 31px;
+      }
+
+      .edition {
+        font-size: 8px;
+      }
+
+      main {
+        padding: 25px 14px 45px;
+      }
+
+      .screen {
+        min-height: 580px;
+      }
+
+      .bamboo-wrapper {
+        transform: scale(0.9);
+      }
+
+      .sticks-stage {
+        width: 100%;
+        height: 390px;
+      }
+
+      .drawn-stick {
+        width: 38px;
+        height: 260px;
+      }
+
+      .drawn-stick::before {
+        width: 31px;
+      }
+
+      .drawn-stick:nth-child(1) {
+        transform: translateX(-155px) rotate(-18deg);
+      }
+
+      .drawn-stick:nth-child(2) {
+        transform: translateX(-105px) rotate(-11deg);
+      }
+
+      .drawn-stick:nth-child(3) {
+        transform: translateX(-53px) rotate(-5deg);
+      }
+
+      .drawn-stick:nth-child(4) {
+        transform: translateX(0px) rotate(3deg);
+      }
+
+      .drawn-stick:nth-child(5) {
+        transform: translateX(53px) rotate(8deg);
+      }
+
+      .drawn-stick:nth-child(6) {
+        transform: translateX(105px) rotate(14deg);
+      }
+
+      .drawn-stick.selected {
+        transform:
+          translateX(-50%)
+          translateY(-25px)
+          rotate(0deg)
+          scale(1.2);
+      }
+
+      .result-card {
+        padding: 32px 24px 28px;
+      }
+
+      .fortune-description {
+        font-size: 14px;
+      }
+
+      .corner {
+        display: none;
+      }
+
+      .vertical-label {
+        display: none;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .header {
+        align-items: flex-start;
+      }
+
+      .edition {
+        display: none;
+      }
+
+      .instruction {
+        font-size: 13px;
+      }
+
+      .drawn-stick:nth-child(1) {
+        transform: translateX(-125px) rotate(-18deg);
+      }
+
+      .drawn-stick:nth-child(2) {
+        transform: translateX(-83px) rotate(-11deg);
+      }
+
+      .drawn-stick:nth-child(3) {
+        transform: translateX(-41px) rotate(-5deg);
+      }
+
+      .drawn-stick:nth-child(4) {
+        transform: translateX(0) rotate(3deg);
+      }
+
+      .drawn-stick:nth-child(5) {
+        transform: translateX(41px) rotate(8deg);
+      }
+
+      .drawn-stick:nth-child(6) {
+        transform: translateX(83px) rotate(14deg);
+      }
+    }
+
+    /* =========================================
+       ACCESSIBILITY
+    ========================================= */
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app" id="app">
+    <div class="noise"></div>
+
+    <div class="corner tl"></div>
+    <div class="corner br"></div>
+
+    <header class="header">
+      <div>
+        <div class="eyebrow">Daily ritual / 01</div>
+        <h1 class="title">
+          TODAY'S <span>FORTUNE</span>
+        </h1>
+      </div>
+
+      <div class="edition">
+        今日靈籤<br />
+        RANDOM DIVINATION
+      </div>
+    </header>
+
+    <main>
+      <section class="screen">
+
+        <!-- =========================
+             START / SHUFFLE
+        ========================== -->
+        <div class="start-panel" id="startPanel">
+          <div class="fortune-area">
+
+            <div
+              class="bamboo-wrapper"
+              id="bambooWrapper"
+              aria-label="長按籤筒洗籤"
+            >
+              <div class="bamboo-shadow"></div>
+
+              <div class="bamboo">
+                <div class="bamboo-label">
+                  今日靈籤
+                  <small>FORTUNE</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="instruction">
+              <strong>長按籤筒・開始洗籤</strong>
+              按住不放，讓命運重新排列
+              <br />
+              放開後，選擇一支屬於你的籤
+            </div>
+
+            <div class="status" id="status">
+              HOLD TO SHUFFLE
+            </div>
+
+          </div>
+        </div>
+
+        <!-- =========================
+             STICK SELECTION
+        ========================== -->
+        <div class="selection-panel" id="selectionPanel">
+          <div class="sticks-stage" id="sticksStage">
+
+            <div class="drawn-stick" data-number="01"></div>
+            <div class="drawn-stick" data-number="02"></div>
+            <div class="drawn-stick" data-number="03"></div>
+            <div class="drawn-stick" data-number="04"></div>
+            <div class="drawn-stick" data-number="05"></div>
+            <div class="drawn-stick" data-number="06"></div>
+
+            <div class="choose-text">
+              CHOOSE ONE / 選一支籤
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================
+             RESULT
+        ========================== -->
+        <div class="result-screen" id="resultScreen">
+
+          <div class="result-card" id="resultCard">
+
+            <div class="result-top">
+              <div class="result-label">
+                TODAY'S DIVINATION
+              </div>
+
+              <div class="result-number" id="resultNumber">
+                No. 01
+              </div>
+            </div>
+
+            <div class="fortune-grade" id="fortuneGrade">
+              大吉
+            </div>
+
+            <div class="fortune-keyword" id="fortuneKeyword">
+              BREAK THROUGH
+            </div>
+
+            <p class="fortune-description" id="fortuneDescription">
+              今天適合跨出熟悉的邊界。
+              不必一次改變所有事情，
+              只需要比昨天多勇敢一點。
+            </p>
+
+            <div class="color-section">
+              <div class="color-swatch" id="colorSwatch"></div>
+
+              <div>
+                <div class="color-title">
+                  Lucky Color / 今日幸運色
+                </div>
+
+                <div class="color-name" id="colorName">
+                  霧紫
+                </div>
+
+                <div class="color-hex" id="colorHex">
+                  #9B8AA8
+                </div>
+              </div>
+            </div>
+
+            <button
+              class="again-button"
+              id="againButton"
+              type="button"
+            >
+              ↻　再抽一次 / DRAW AGAIN
+            </button>
+
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <div class="vertical-label">
+      FIND YOUR LITTLE SIGN
+    </div>
+  </div>
+
+  <script>
+    /* =====================================================
+       今日靈籤占卜
+       單一 HTML / GitHub Pages Ready
+    ===================================================== */
+
+
+    /* =====================================================
+       DATABASE A
+       運勢與籤詩說明
+    ===================================================== */
+
+    const fortuneDatabase = [
+      {
+        grade: "大吉",
+        keyword: "BREAK THROUGH",
+        description:
+          "今天適合跨出熟悉的邊界。你不需要一次改變所有事情，只需要比昨天多勇敢一點。真正的突破，往往從一個很小的決定開始。"
+      },
+      {
+        grade: "上上籤",
+        keyword: "RIGHT MOMENT",
+        description:
+          "等待已久的事情正在慢慢靠近。不要因為過去的不順利而懷疑現在的自己，屬於你的時機正在形成。保持敏銳，也保持相信。"
+      },
+      {
+        grade: "吉",
+        keyword: "KEEP GOING",
+        description:
+          "你正在走的路也許比想像中漫長，但方向沒有錯。今天不需要急著證明自己，穩穩走下去，累積會替你說話。"
+      },
+      {
+        grade: "小吉",
+        keyword: "LITTLE JOY",
+        description:
+          "今天的好運藏在不起眼的小事裡。一句剛好的話、一個突然的邀請，甚至一段獨處的時間，都可能成為讓你重新充電的理由。"
+      },
+      {
+        grade: "吉",
+        keyword: "NEW SIGNAL",
+        description:
+          "新的可能正在發出微弱訊號。先不要急著判斷它是否值得，給自己一點時間靠近，你可能會發現原本沒有注意到的答案。"
+      },
+      {
+        grade: "上吉",
+        keyword: "TRUST YOURSELF",
+        description:
+          "你其實比自己想像中更清楚答案。今天適合相信直覺，也適合把那些一直放在心裡的想法，真正變成一個行動。"
+      },
+      {
+        grade: "中吉",
+        keyword: "RESET",
+        description:
+          "不是所有事情都必須今天完成。有時候停下來重新整理，比勉強自己繼續更有力量。允許自己喘口氣，再重新出發。"
+      },
+      {
+        grade: "大吉",
+        keyword: "MAKE YOUR MOVE",
+        description:
+          "你等待的答案，也許不會自己出現。今天適合主動一步，傳出那則訊息、開始那件事，或說出一直沒有說出口的話。"
+      },
+      {
+        grade: "上吉",
+        keyword: "QUIET POWER",
+        description:
+          "真正的力量不一定需要很大的聲音。你正在累積的能力與經驗，會在適當的時刻成為自己的底氣。慢一點，也沒有關係。"
+      },
+      {
+        grade: "吉",
+        keyword: "OPEN DOOR",
+        description:
+          "今天適合接觸新的環境與新的想法。不要太快把自己關在熟悉的答案裡，偶然遇見的事物，也可能成為下一段故事的入口。"
+      },
+      {
+        grade: "小吉",
+        keyword: "TAKE IT EASY",
+        description:
+          "今天不必把所有事情都想得太遠。把眼前的一步做好，就已經足夠。當你不再逼迫自己，反而更容易看見真正重要的事情。"
+      },
+      {
+        grade: "上上籤",
+        keyword: "YOUR TIME",
+        description:
+          "你曾經默默努力的事情正在累積成果。也許還沒有立即看見答案，但請不要低估時間與堅持的力量。你的努力沒有消失。"
+      }
+    ];
+
+
+    /* =====================================================
+       DATABASE B
+       幸運色
+    ===================================================== */
+
+    const colorDatabase = [
+      {
+        name: "霧紫",
+        hex: "#9B8AA8"
+      },
+      {
+        name: "冷光藍",
+        hex: "#6F8FAF"
+      },
+      {
+        name: "月灰",
+        hex: "#858A91"
+      },
+      {
+        name: "午夜靛藍",
+        hex: "#3F4B72"
+      },
+      {
+        name: "霧玫瑰",
+        hex: "#A9828D"
+      },
+      {
+        name: "銀灰",
+        hex: "#A5A7AA"
+      },
+      {
+        name: "深苔綠",
+        hex: "#667567"
+      },
+      {
+        name: "冷霧青",
+        hex: "#719394"
+      },
+      {
+        name: "煙燻紫",
+        hex: "#71677C"
+      },
+      {
+        name: "沙岩米",
+        hex: "#B7A991"
+      }
+    ];
+
+
+    /* =====================================================
+       DOM
+    ===================================================== */
+
+    const bambooWrapper =
+      document.getElementById("bambooWrapper");
+
+    const startPanel =
+      document.getElementById("startPanel");
+
+    const selectionPanel =
+      document.getElementById("selectionPanel");
+
+    const sticksStage =
+      document.getElementById("sticksStage");
+
+    const resultScreen =
+      document.getElementById("resultScreen");
+
+    const resultCard =
+      document.getElementById("resultCard");
+
+    const status =
+      document.getElementById("status");
+
+    const sticks =
+      document.querySelectorAll(".drawn-stick");
+
+    const againButton =
+      document.getElementById("againButton");
+
+    const fortuneGrade =
+      document.getElementById("fortuneGrade");
+
+    const fortuneKeyword =
+      document.getElementById("fortuneKeyword");
+
+    const fortuneDescription =
+      document.getElementById("fortuneDescription");
+
+    const colorSwatch =
+      document.getElementById("colorSwatch");
+
+    const colorName =
+      document.getElementById("colorName");
+
+    const colorHex =
+      document.getElementById("colorHex");
+
+    const resultNumber =
+      document.getElementById("resultNumber");
+
+
+    /* =====================================================
+       STATE
+    ===================================================== */
+
+    let isPressing = false;
+    let shuffleTimer = null;
+    let hasDrawn = false;
+
+
+    /* =====================================================
+       RANDOM DATABASE FUNCTIONS
+    ===================================================== */
+
+    function randomFrom(array) {
+      const index = Math.floor(
+        Math.random() * array.length
+      );
+
+      return array[index];
+    }
+
+
+    /*
+      從兩個獨立資料庫各抽一次。
+
+      Database A:
+      fortuneDatabase
+
+      Database B:
+      colorDatabase
+
+      兩者互不影響。
+    */
+    function generateFortune() {
+      const fortune =
+        randomFrom(fortuneDatabase);
+
+      const luckyColor =
+        randomFrom(colorDatabase);
+
+      return {
+        fortune,
+        luckyColor
+      };
+    }
+
+
+    /* =====================================================
+       LONG PRESS START
+    ===================================================== */
+
+    function startShuffle(event) {
+      if (hasDrawn) return;
+
+      if (event) {
+        event.preventDefault();
+      }
+
+      if (isPressing) return;
+
+      isPressing = true;
+
+      bambooWrapper.classList.add("pressing");
+
+      status.textContent =
+        "SHUFFLING... / 命運重新排列中";
+
+      status.classList.add("active");
+
+      /*
+        持續更新隨機旋轉角度，
+        讓洗籤過程不會只有固定 CSS 動畫。
+      */
+      shuffleTimer = setInterval(() => {
+        const bamboo =
+          bambooWrapper.querySelector(".bamboo");
+
+        const randomRotation =
+          (Math.random() * 8 - 4).toFixed(2);
+
+        bamboo.style.filter =
+          `brightness(${1 + Math.random() * 0.12})`;
+
+        bamboo.style.transform =
+          `translateX(-50%) rotate(${randomRotation}deg)`;
+      }, 100);
+    }
+
+
+    /* =====================================================
+       LONG PRESS END
+    ===================================================== */
+
+    function stopShuffle(event) {
+      if (event) {
+        event.preventDefault();
+      }
+
+      if (!isPressing) return;
+
+      isPressing = false;
+
+      clearInterval(shuffleTimer);
+      shuffleTimer = null;
+
+      const bamboo =
+        bambooWrapper.querySelector(".bamboo");
+
+      bamboo.style.transform =
+        "translateX(-50%)";
+
+      bamboo.style.filter = "";
+
+      bambooWrapper.classList.remove("pressing");
+
+      status.textContent =
+        "CHOOSE YOUR SIGN / 選擇你的籤";
+
+      status.classList.remove("active");
+
+      showSticks();
+    }
+
+
+    /* =====================================================
+       SHOW STICKS
+    ===================================================== */
+
+    function showSticks() {
+      hasDrawn = true;
+
+      startPanel.classList.add("hidden");
+
+      selectionPanel.classList.add("visible");
+
+      /*
+        稍微延遲，讓 CSS transition
+        能夠正常觸發。
+      */
+      requestAnimationFrame(() => {
+        sticksStage.classList.add("visible");
+      });
+    }
+
+
+    /* =====================================================
+       SELECT STICK
+    ===================================================== */
+
+    function selectStick(selectedStick) {
+      if (!hasDrawn) return;
+
+      /*
+        防止重複點擊
+      */
+      if (selectedStick.classList.contains("selected")) {
+        return;
+      }
+
+      sticks.forEach((stick) => {
+        if (stick !== selectedStick) {
+          stick.classList.add("hidden");
+        }
+      });
+
+      selectedStick.classList.add("selected");
+
+      /*
+        等待選中的籤完成放大動畫
+        再顯示結果。
+      */
+      setTimeout(() => {
+        showResult(selectedStick);
+      }, 700);
+    }
+
+
+    /* =====================================================
+       SHOW RESULT
+    ===================================================== */
+
+    function showResult(selectedStick) {
+      /*
+        每次選籤時，
+        分別從兩個 Database 隨機抽取。
+      */
+      const result =
+        generateFortune();
+
+      const fortune =
+        result.fortune;
+
+      const luckyColor =
+        result.luckyColor;
+
+      /*
+        Render fortune
+      */
+      fortuneGrade.textContent =
+        fortune.grade;
+
+      fortuneKeyword.textContent =
+        fortune.keyword;
+
+      fortuneDescription.textContent =
+        fortune.description;
+
+      /*
+        Render lucky color
+      */
+      colorName.textContent =
+        luckyColor.name;
+
+      colorHex.textContent =
+        luckyColor.hex;
+
+      colorSwatch.style.background =
+        luckyColor.hex;
+
+      /*
+        將幸運色設定成結果卡左側
+        的 Border Glow 顏色。
+      */
+      resultCard.style.setProperty(
+        "--luck-color",
+        luckyColor.hex
+      );
+
+      /*
+        顯示使用者選到的籤號
+      */
+      resultNumber.textContent =
+        "No. " +
+        selectedStick.dataset.number;
+
+      /*
+        隱藏選籤畫面
+      */
+      selectionPanel.classList.remove("visible");
+
+      /*
+        顯示結果
+      */
+      resultScreen.classList.add("visible");
+    }
+
+
+    /* =====================================================
+       RESET
+    ===================================================== */
+
+    function resetGame() {
+      hasDrawn = false;
+      isPressing = false;
+
+      clearInterval(shuffleTimer);
+      shuffleTimer = null;
+
+      startPanel.classList.remove("hidden");
+
+      selectionPanel.classList.remove("visible");
+
+      sticksStage.classList.remove("visible");
+
+      resultScreen.classList.remove("visible");
+
+      status.textContent =
+        "HOLD TO SHUFFLE";
+
+      status.classList.remove("active");
+
+      sticks.forEach((stick) => {
+        stick.classList.remove(
+          "selected",
+          "hidden"
+        );
+      });
+
+      const bamboo =
+        bambooWrapper.querySelector(".bamboo");
+
+      bamboo.style.transform =
+        "translateX(-50%)";
+
+      bamboo.style.filter = "";
+    }
+
+
+    /* =====================================================
+       DESKTOP EVENTS
+    ===================================================== */
+
+    bambooWrapper.addEventListener(
+      "mousedown",
+      startShuffle
+    );
+
+    window.addEventListener(
+      "mouseup",
+      stopShuffle
+    );
+
+
+    /* =====================================================
+       MOBILE EVENTS
+    ===================================================== */
+
+    bambooWrapper.addEventListener(
+      "touchstart",
+      startShuffle,
+      { passive: false }
+    );
+
+    window.addEventListener(
+      "touchend",
+      stopShuffle,
+      { passive: false }
+    );
+
+    window.addEventListener(
+      "touchcancel",
+      stopShuffle,
+      { passive: false }
+    );
+
+
+    /* =====================================================
+       PREVENT CONTEXT MENU
+    ===================================================== */
+
+    bambooWrapper.addEventListener(
+      "contextmenu",
+      (event) => {
+        event.preventDefault();
+      }
+    );
+
+
+    /* =====================================================
+       STICK EVENTS
+    ===================================================== */
+
+    sticks.forEach((stick) => {
+      stick.addEventListener(
+        "click",
+        () => selectStick(stick)
+      );
+
+      stick.addEventListener(
+        "touchend",
+        (event) => {
+          event.preventDefault();
+          selectStick(stick);
+        },
+        { passive: false }
+      );
+    });
+
+
+    /* =====================================================
+       AGAIN
+    ===================================================== */
+
+    againButton.addEventListener(
+      "click",
+      resetGame
+    );
+
+
+    /* =====================================================
+       KEYBOARD SUPPORT
+    ===================================================== */
+
+    bambooWrapper.addEventListener(
+      "keydown",
+      (event) => {
+        if (
+          event.key === " " ||
+          event.key === "Enter"
+        ) {
+          startShuffle(event);
+        }
+      }
+    );
+
+    bambooWrapper.addEventListener(
+      "keyup",
+      (event) => {
+        if (
+          event.key === " " ||
+          event.key === "Enter"
+        ) {
+          stopShuffle(event);
+        }
+      }
+    );
+
+
+    /* =====================================================
+       INITIAL STATE
+    ===================================================== */
+
+    resetGame();
+
+  </script>
+</body>
+</html>
+```
